@@ -91,12 +91,16 @@ class K2JVMCompiler : CLICompiler<K2JVMCompilerArguments>() {
             }
         }
 
+        for (path in arguments.commonSources.orEmpty()) {
+            configuration.addKotlinSourceRoot(path, isCommon = true)
+        }
+
         configuration.put(CommonConfigurationKeys.MODULE_NAME, arguments.moduleName ?: JvmAbi.DEFAULT_MODULE_NAME)
 
         if (arguments.buildFile == null) {
             configureContentRoots(paths, arguments, configuration)
 
-            if (arguments.freeArgs.isEmpty() && !arguments.version) {
+            if (arguments.freeArgs.isEmpty() && arguments.commonSources?.isEmpty() == true && !arguments.version) {
                 if (arguments.script) {
                     messageCollector.report(ERROR, "Specify script source path to evaluate")
                     return COMPILATION_ERROR

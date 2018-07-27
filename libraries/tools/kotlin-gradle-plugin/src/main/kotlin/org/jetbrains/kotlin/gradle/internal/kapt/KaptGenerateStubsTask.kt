@@ -21,15 +21,15 @@ import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.*
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
+import org.jetbrains.kotlin.gradle.incremental.ChangedFiles
 import org.jetbrains.kotlin.gradle.plugin.kotlinDebug
 import org.jetbrains.kotlin.gradle.tasks.FilteringSourceRootsContainer
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.SourceRoots
-import org.jetbrains.kotlin.gradle.incremental.ChangedFiles
 import org.jetbrains.kotlin.gradle.utils.isParentOf
+import org.jetbrains.kotlin.gradle.utils.pathsAsStringRelativeTo
 import org.jetbrains.kotlin.incremental.classpathAsList
 import org.jetbrains.kotlin.incremental.destinationAsFile
-import org.jetbrains.kotlin.gradle.utils.pathsAsStringRelativeTo
 import java.io.File
 
 @CacheableTask
@@ -79,12 +79,11 @@ open class KaptGenerateStubsTask : KotlinCompile() {
     }
 
     override fun execute(inputs: IncrementalTaskInputs) {
-        val sourceRoots = kotlinCompileTask.getSourceRoots().let {
-            val javaSourceRoots = it.javaSourceRoots.filterTo(HashSet()) { isSourceRootAllowed(it) }
-            val kotlinSourceFiles = it.kotlinSourceFiles
-            SourceRoots.ForJvm(kotlinSourceFiles, javaSourceRoots)
+        val sourceRoots = kotlinCompileTask.getSourceRoots().let { sourceRoots ->
+            val javaSourceRoots = sourceRoots.javaSourceRoots.filterTo(HashSet()) { isSourceRootAllowed(it) }
+            SourceRoots.ForJvm(sourceRoots.kotlinSourceFiles, sourceRoots.kotlinCommonSourceFiles, javaSourceRoots)
         }
-        val allKotlinSources = sourceRoots.kotlinSourceFiles
+        val allKotlinSources = sourceRoots.allKotlinSourceFiles
 
         logger.kotlinDebug { "All kotlin sources: ${allKotlinSources.pathsAsStringRelativeTo(project.rootProject.projectDir)}" }
 

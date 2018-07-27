@@ -10,24 +10,38 @@ import org.jetbrains.kotlin.gradle.utils.isParentOf
 import java.io.File
 import java.util.*
 
-internal sealed class SourceRoots(val kotlinSourceFiles: List<File>) {
+internal sealed class SourceRoots(
+    val kotlinSourceFiles: List<File>,
+    val kotlinCommonSourceFiles: List<File>
+) {
     private companion object {
         fun dumpPaths(files: Iterable<File>): String =
                 "[${files.map { it.canonicalPath }.sorted().joinToString(prefix = "\n\t", separator = ",\n\t")}]"
+
+        fun Iterable<File>.toKotlinFileList(): List<File> = filter(File::isKotlinFile)
     }
+
+    val allKotlinSourceFiles: List<File>
+        get() = kotlinSourceFiles + kotlinCommonSourceFiles
 
     open fun log(taskName: String, logger: Logger) {
         logger.kotlinDebug { "$taskName source roots: ${dumpPaths(kotlinSourceFiles)}" }
+        if (kotlinCommonSourceFiles.isNotEmpty()) {
+            logger.kotlinDebug { "$taskName common source roots: ${dumpPaths(kotlinCommonSourceFiles)}" }
+        }
     }
 
-    class ForJvm(kotlinSourceFiles: List<File>, val javaSourceRoots: Set<File>) : SourceRoots(kotlinSourceFiles) {
+    class ForJvm(
+        kotlinSourceFiles: List<File>,
+        kotlinCommonSourceFiles: List<File>,
+        val javaSourceRoots: Set<File>
+    ) : SourceRoots(kotlinSourceFiles, kotlinCommonSourceFiles) {
         companion object {
-            fun create(taskSource: FileTree, sourceRoots: FilteringSourceRootsContainer): ForJvm {
-                val kotlinSourceFiles = (taskSource as Iterable<File>).filter(File::isKotlinFile)
-                val javaSourceRoots = findRootsForSources(
-                        sourceRoots.sourceRoots, taskSource.filter(File::isJavaFile))
-                return ForJvm(kotlinSourceFiles, javaSourceRoots)
-            }
+            fun create(taskSource: FileTree, commonSources: Iterable<File>, sourceRoots: FilteringSourceRootsContainer): ForJvm = ForJvm(
+                taskSource.toKotlinFileList(),
+                commonSources.toKotlinFileList(),
+                findRootsForSources(sourceRoots.sourceRoots, taskSource.filter(File::isJavaFile))
+            )
 
             private fun findRootsForSources(allSourceRoots: Iterable<File>, sources: Iterable<File>): Set<File> {
                 val resultRoots = HashSet<File>()
@@ -51,9 +65,13 @@ internal sealed class SourceRoots(val kotlinSourceFiles: List<File>) {
         }
     }
 
-    class KotlinOnly(kotlinSourceFiles: List<File>) : SourceRoots(kotlinSourceFiles) {
+    class KotlinOnly(
+        kotlinSourceFiles: List<File>,
+        kotlinCommonSourceFiles: List<File>
+    ) : SourceRoots(kotlinSourceFiles, kotlinCommonSourceFiles) {
         companion object {
-            fun create(taskSource: FileTree) = KotlinOnly((taskSource as Iterable<File>).filter(File::isKotlinFile))
+            fun create(taskSource: FileTree, commonSources: Iterable<File>): KotlinOnly =
+                KotlinOnly(taskSource.toKotlinFileList(), commonSources.toKotlinFileList())
         }
     }
 }

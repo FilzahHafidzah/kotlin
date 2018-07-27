@@ -40,7 +40,7 @@ internal open class KotlinCompileCommon : AbstractKotlinCompile<K2MetadataCompil
             K2MetadataCompilerArguments()
 
     override fun getSourceRoots(): SourceRoots =
-            SourceRoots.KotlinOnly.create(getSource())
+            SourceRoots.KotlinOnly.create(getSource(), commonSourceSet)
 
     override fun findKotlinCompilerClasspath(project: Project): List<File>  =
             findKotlinMetadataCompilerClasspath(project)
@@ -69,7 +69,7 @@ internal open class KotlinCompileCommon : AbstractKotlinCompile<K2MetadataCompil
         val outputItemCollector = OutputItemsCollectorImpl()
         val compilerRunner = GradleCompilerRunner(project)
         val environment = GradleCompilerEnvironment(computedCompilerClasspath, messageCollector, outputItemCollector, args)
-        val exitCode = compilerRunner.runMetadataCompiler(sourceRoots.kotlinSourceFiles, args, environment)
+        val exitCode = compilerRunner.runMetadataCompiler(sourceRoots.allKotlinSourceFiles, args, environment)
         throwGradleExceptionIfError(exitCode)
     }
 }

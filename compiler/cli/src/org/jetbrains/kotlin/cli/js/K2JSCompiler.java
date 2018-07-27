@@ -176,6 +176,14 @@ public class K2JSCompiler extends CLICompiler<K2JSCompilerArguments> {
         configuration.put(JSConfigurationKeys.LIBRARIES, configureLibraries(arguments, paths, messageCollector));
 
         ContentRootsKt.addKotlinSourceRoots(configuration, arguments.getFreeArgs());
+
+        String[] commonSources = arguments.getCommonSources();
+        if (commonSources != null) {
+            for (String path : commonSources) {
+                ContentRootsKt.addKotlinSourceRoot(configuration, path, true);
+            }
+        }
+
         KotlinCoreEnvironment environmentForJS =
                 KotlinCoreEnvironment.createForProduction(rootDisposable, configuration, EnvironmentConfigFiles.JS_CONFIG_FILES);
 

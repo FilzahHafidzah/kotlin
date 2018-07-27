@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.backend.jvm.JvmIrCodegenFactory
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.checkKotlinPackageUsage
+import org.jetbrains.kotlin.cli.common.config.addKotlinSourceRoot
 import org.jetbrains.kotlin.cli.common.config.addKotlinSourceRoots
 import org.jetbrains.kotlin.cli.common.messages.AnalyzerWithCompilerReport
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.OUTPUT
@@ -65,18 +66,6 @@ import java.lang.reflect.InvocationTargetException
 import java.net.URLClassLoader
 
 object KotlinToJVMBytecodeCompiler {
-
-    private fun getAbsoluteFiles(buildFile: File, module: Module): List<File> {
-        return module.getSourceFiles().map { sourceFile ->
-            val source = File(sourceFile)
-            if (!source.isAbsolute) {
-                File(buildFile.absoluteFile.parentFile, sourceFile)
-            } else {
-                source
-            }
-        }
-    }
-
     private fun writeOutput(
         configuration: CompilerConfiguration,
         outputFiles: OutputFileCollection,
@@ -142,7 +131,8 @@ object KotlinToJVMBytecodeCompiler {
 
         for (module in chunk) {
             ProgressIndicatorAndCompilationCanceledStatus.checkCanceled()
-            val moduleSourceFiles = getAbsoluteFiles(buildFile, module).map { file -> localFileSystem.findFileByPath(file.path) }
+            val moduleSourceFiles =
+                getAbsolutePaths(buildFile, module.getSourceFiles() + module.getCommonSourceFiles()).map(localFileSystem::findFileByPath)
             val ktFiles = environment.getSourceFiles().filter { file -> file.virtualFile in moduleSourceFiles }
 
             if (!checkKotlinPackageUsage(environment, ktFiles)) return false
@@ -184,7 +174,11 @@ object KotlinToJVMBytecodeCompiler {
 
     internal fun configureSourceRoots(configuration: CompilerConfiguration, chunk: List<Module>, buildFile: File) {
         for (module in chunk) {
-            configuration.addKotlinSourceRoots(getAbsoluteFiles(buildFile, module).map(File::getPath))
+            configuration.addKotlinSourceRoots(getAbsolutePaths(buildFile, module.getSourceFiles()))
+
+            for (path in getAbsolutePaths(buildFile, module.getCommonSourceFiles())) {
+                configuration.addKotlinSourceRoot(path, isCommon = true)
+            }
         }
 
         for (module in chunk) {
@@ -223,6 +217,16 @@ object KotlinToJVMBytecodeCompiler {
 
         configuration.addAll(JVMConfigurationKeys.MODULES, chunk)
     }
+
+    private fun getAbsolutePaths(buildFile: File, sourceFilePaths: List<String>): List<String> =
+        sourceFilePaths.map { path ->
+            val sourceFile = File(path)
+            if (!sourceFile.isAbsolute) {
+                File(buildFile.absoluteFile.parentFile, path).absolutePath
+            } else {
+                sourceFile.absolutePath
+            }
+        }
 
     private fun findMainClass(generationState: GenerationState, files: List<KtFile>): FqName? {
         val mainFunctionDetector = MainFunctionDetector(generationState.bindingContext)
