@@ -69,6 +69,7 @@ fun makeIncrementally(
     withIC {
         val compiler = IncrementalJvmCompilerRunner(
                 cachesDir,
+                args.commonSources?.map(::File).orEmpty(),
                 sourceRoots.map { JvmSourceRoot(it, null) }.toSet(),
                 versions, reporter,
                 // Use precise setting in case of non-Gradle build
@@ -100,6 +101,7 @@ inline fun <R> withIC(enabled: Boolean = true, fn: ()->R): R {
 
 class IncrementalJvmCompilerRunner(
         workingDir: File,
+        private val commonSourceFiles: List<File>,
         private val javaSourceRoots: Set<JvmSourceRoot>,
         cacheVersions: List<CacheVersion>,
         reporter: ICReporter,
@@ -427,7 +429,7 @@ class IncrementalJvmCompilerRunner(
             isTest = false,
             outputDir = outputDir,
             sourcesToCompile = sourcesToCompile,
-            commonSources = args.commonSources?.map(::File).orEmpty(),
+            commonSources = commonSourceFiles,
             javaSourceRoots = javaSourceRoots,
             classpath = classpath,
             friendDirs = listOf()
