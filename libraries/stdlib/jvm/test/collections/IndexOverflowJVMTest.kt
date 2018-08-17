@@ -18,8 +18,7 @@ class IndexOverflowJVMTest {
 
 
     companion object {
-        // by default count is one greater than Int.MAX_VALUE
-        fun <T> repeatCounted(value: T, count: Long = 1L shl 31): Sequence<T> = Sequence {
+        fun <T> repeatCounted(value: T, count: Long = Int.MAX_VALUE + 1L): Sequence<T> = Sequence {
             object : Iterator<T> {
                 var counter = count
                 override fun hasNext(): Boolean = counter > 0
@@ -27,7 +26,7 @@ class IndexOverflowJVMTest {
             }
         }
 
-        val maxIndexSequence = repeatCounted("k", (1L shl 31) + 1) // here the last index is one greater than Int.MAX_VALUE
+        val maxIndexSequence = repeatCounted("k", (Int.MAX_VALUE + 1L) + 1L) // here the last index is one greater than Int.MAX_VALUE
         val maxIndexIterable = maxIndexSequence.asIterable()
 
 
