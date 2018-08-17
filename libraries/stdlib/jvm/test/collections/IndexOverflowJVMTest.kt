@@ -13,7 +13,7 @@ class IndexOverflowJVMTest {
 
     @BeforeTest
     fun checkIsNotIgnored() {
-        Assume.assumeTrue(System.getProperty("long.sequences.tests")?.toBoolean() ?: false)
+        Assume.assumeTrue(System.getProperty("kotlin.stdlib.test.long.sequences")?.toBoolean() ?: false)
     }
 
 

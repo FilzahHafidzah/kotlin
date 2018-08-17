@@ -262,8 +262,8 @@ compileTestKotlin {
 }
 
 test {
-    if (project.hasProperty("long.sequences.tests") || project.hasProperty("teamcity")) {
-        systemProperty("long.sequences.tests", "true")
+    if (project.hasProperty("kotlin.stdlib.test.long.sequences")) {
+        systemProperty("kotlin.stdlib.test.long.sequences", "true")
     }
 }
 
